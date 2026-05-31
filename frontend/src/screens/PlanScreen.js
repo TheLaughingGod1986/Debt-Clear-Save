@@ -4,297 +4,182 @@
 // Layout: kicker → title → Mission → Hero switcher → Hero → Mini roadmap →
 //         Future snapshot → Future wealth → Goals → Debts → Budget breakdown.
 
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { colors, type, radius, fonts, gbp, monthLabel, yearsMonths } from '../theme/theme';
-import { LANE_PALETTE, laneFor } from '../theme/theme';
+import React from 'react';
+import { View, Text, ScrollView } from 'react-native';
+import {
+  colors,
+  type,
+  radius,
+  fonts,
+  gbp,
+  monthLabel,
+  yearsMonths,
+  daysUntil,
+  laneFor,
+} from '../theme/theme';
 import {
   Kicker,
   ScreenTitle,
   SectionHead,
   GrowBar,
   SegmentBar,
-  StatCard,
-  Pill,
-  MilestoneTimeline,
 } from '../components/ui';
 
-// ── Hero switcher ─────────────────────────────────────────────────
+// ── Countdown hero — the emotional centrepiece ────────────────────
 
-const HERO_VIEWS = [
-  { value: 'dates', label: 'Dates' },
-  { value: 'networth', label: 'Net worth' },
-  { value: 'journey', label: 'Journey' },
-];
-
-function HeroSwitcher({ value, onChange }) {
-  return (
-    <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-      {HERO_VIEWS.map((v) => {
-        const on = v.value === value;
-        return (
-          <TouchableOpacity
-            key={v.value}
-            onPress={() => onChange && onChange(v.value)}
-            style={{
-              flex: 1,
-              marginHorizontal: 3,
-              borderRadius: radius.pill,
-              borderWidth: 1.5,
-              borderColor: on ? colors.ink : colors.line,
-              backgroundColor: on ? colors.ink : colors.white,
-              paddingVertical: 7,
-              alignItems: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: on ? colors.white : colors.muted,
-                fontSize: 11,
-                fontWeight: on ? '800' : '700',
-                letterSpacing: 0.2,
-              }}
-            >
-              {v.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-// ── Mission card ──────────────────────────────────────────────────
-
-function MissionCard({ projection }) {
+function CountdownHero({ projection }) {
   const s = projection.summary;
   const dfree = s.debt_free_month;
-  const all = s.all_goals_met_month;
-  const md = s.months_done;
-  const remaining = dfree ? Math.max(0, dfree - md) : null;
-  const subtitle = dfree
-    ? `Debt-free in ${yearsMonths(remaining ?? dfree)} · everything done in ${yearsMonths(
-        all || s.final_month
-      )}`
-    : 'Set a budget that covers your interest to start clearing debt.';
-  return (
-    <View
-      style={{
-        backgroundColor: colors.ink,
-        borderRadius: 14,
-        padding: 18,
-      }}
-    >
-      <Text
-        style={{
-          color: 'rgba(255,255,255,0.55)',
-          fontSize: 9.5,
-          fontWeight: '800',
-          letterSpacing: 1.6,
-          textTransform: 'uppercase',
-        }}
-      >
-        Your mission
-      </Text>
-      <Text
-        style={{
-          color: colors.white,
-          fontFamily: fonts.display,
-          fontSize: 26,
-          fontWeight: '800',
-          marginTop: 6,
-          letterSpacing: -0.4,
-        }}
-      >
-        {dfree ? `Free in ${yearsMonths(remaining ?? dfree)}` : 'Build your plan'}
-      </Text>
-      <Text style={{ color: 'rgba(255,255,255,0.78)', fontSize: 13, marginTop: 6, lineHeight: 19 }}>
-        {subtitle}
-      </Text>
-      {dfree ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            marginTop: 14,
-            paddingTop: 14,
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255,255,255,0.12)',
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 9.5,
-                fontWeight: '800',
-                letterSpacing: 1.4,
-                textTransform: 'uppercase',
-              }}
-            >
-              Debt free
-            </Text>
-            <Text
-              style={{
-                color: colors.white,
-                fontFamily: fonts.display,
-                fontSize: 18,
-                fontWeight: '800',
-                marginTop: 3,
-              }}
-            >
-              {monthLabel(dfree)}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 9.5,
-                fontWeight: '800',
-                letterSpacing: 1.4,
-                textTransform: 'uppercase',
-              }}
-            >
-              Final saved
-            </Text>
-            <Text
-              style={{
-                color: colors.savingsBorder,
-                fontFamily: fonts.display,
-                fontSize: 18,
-                fontWeight: '800',
-                marginTop: 3,
-              }}
-            >
-              {gbp(s.final_savings)}
-            </Text>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
-// ── Hero (dates | networth | journey) ─────────────────────────────
-
-function HeroDates({ projection }) {
-  const s = projection.summary;
-  return (
-    <View
-      style={{
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.line,
-        borderRadius: 14,
-        padding: 16,
-      }}
-    >
-      <Text style={[type.label, { fontSize: 10 }]}>Headline dates</Text>
-      <View style={{ flexDirection: 'row', marginTop: 12, gap: 10 }}>
-        <StatCard
-          label="Debt free"
-          value={s.debt_free_month ? monthLabel(s.debt_free_month) : '—'}
-          sub={s.debt_free_month ? `Month ${s.debt_free_month}` : 'In progress'}
-          color={colors.cc}
-        />
-        <View style={{ width: 10 }} />
-        <StatCard
-          label="All goals"
-          value={s.all_goals_met_month ? monthLabel(s.all_goals_met_month) : '—'}
-          sub={s.all_goals_met_month ? `Month ${s.all_goals_met_month}` : 'In progress'}
-          color={colors.savings}
-        />
-      </View>
-    </View>
-  );
-}
-
-function HeroNetworth({ projection }) {
-  const s = projection.summary;
-  return (
-    <View
-      style={{
-        backgroundColor: colors.savingsSoft,
-        borderWidth: 1.5,
-        borderColor: colors.savingsBorder,
-        borderRadius: 14,
-        padding: 16,
-      }}
-    >
-      <Text style={[type.label, { fontSize: 10, color: colors.savings }]}>Net wealth shift</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 10 }}>
+  if (!dfree) {
+    return (
+      <View style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 22 }}>
         <Text
           style={{
-            fontFamily: fonts.display,
-            fontSize: 14,
-            fontWeight: '700',
-            color: colors.muted,
-            marginRight: 8,
-          }}
-        >
-          {gbp(s.current_net)}
-        </Text>
-        <Text style={{ color: colors.muted, fontSize: 14 }}>→</Text>
-        <Text
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 30,
+            color: 'rgba(255,255,255,0.55)',
+            fontSize: 10,
             fontWeight: '800',
-            color: colors.savings,
-            marginLeft: 8,
+            letterSpacing: 1.8,
+            textTransform: 'uppercase',
+          }}
+        >
+          Build your plan
+        </Text>
+        <Text
+          style={{
+            color: colors.white,
+            fontFamily: fonts.display,
+            fontSize: 26,
+            fontWeight: '800',
+            marginTop: 8,
             letterSpacing: -0.4,
           }}
         >
-          +{gbp(s.final_savings)}
+          Add debts to see your countdown.
+        </Text>
+        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 6 }}>
+          Settings → Debts → Add debt.
         </Text>
       </View>
-      <Text style={{ fontSize: 12, color: colors.ink, marginTop: 8 }}>
-        Total improvement <Text style={{ fontWeight: '800' }}>{gbp(s.total_improvement)}</Text>
-      </Text>
-    </View>
-  );
-}
+    );
+  }
 
-function HeroJourney({ projection }) {
-  const s = projection.summary;
+  const days = daysUntil(dfree - s.months_done);
+  const ym = yearsMonths(Math.max(0, dfree - s.months_done));
+
   return (
-    <View
-      style={{
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.line,
-        borderRadius: 14,
-        padding: 16,
-      }}
-    >
-      <Text style={[type.label, { fontSize: 10 }]}>Journey progress</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 8 }}>
+    <View style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 22 }}>
+      <Text
+        style={{
+          color: 'rgba(255,255,255,0.55)',
+          fontSize: 10,
+          fontWeight: '800',
+          letterSpacing: 1.8,
+          textTransform: 'uppercase',
+        }}
+      >
+        Debt freedom in
+      </Text>
+
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 6 }}>
         <Text
           style={{
             fontFamily: fonts.display,
-            fontSize: 36,
+            fontSize: 64,
             fontWeight: '800',
-            color: colors.ink,
-            letterSpacing: -0.6,
+            color: colors.white,
+            letterSpacing: -1.5,
+            lineHeight: 64,
+          }}
+          accessibilityLabel={`${days} days until debt free`}
+        >
+          {days.toLocaleString('en-GB')}
+        </Text>
+        <Text
+          style={{
+            color: 'rgba(255,255,255,0.65)',
+            fontSize: 18,
+            fontWeight: '700',
+            marginLeft: 10,
           }}
         >
-          {s.pct_complete}%
-        </Text>
-        <Text style={{ marginLeft: 8, color: colors.muted, fontSize: 12 }}>
-          {s.months_done} / {s.final_month} months
+          days
         </Text>
       </View>
-      <View style={{ marginTop: 10 }}>
-        <GrowBar pct={s.pct_complete} color={colors.savings} height={10} />
+      <Text
+        style={{
+          color: 'rgba(255,255,255,0.78)',
+          fontSize: 14,
+          fontWeight: '600',
+          marginTop: 4,
+        }}
+      >
+        {ym} · debt free by {monthLabel(dfree)}
+      </Text>
+
+      <View style={{ marginTop: 16 }}>
+        <GrowBar
+          pct={s.pct_complete}
+          color={colors.savingsBorder}
+          track="rgba(255,255,255,0.14)"
+          height={10}
+        />
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          marginTop: 16,
+          paddingTop: 16,
+          borderTopWidth: 1,
+          borderTopColor: 'rgba(255,255,255,0.12)',
+        }}
+      >
+        <HeroStat label="Remaining" value={gbp(s.start_debt - (projection.rows[s.months_done - 1]?.debtPaid ? sumDebtPaid(projection, s.months_done) : 0))} color={colors.ccBorder} />
+        <HeroStat label="Saved so far" value={gbp(s.months_done > 0 ? projection.rows[Math.min(s.months_done, projection.rows.length) - 1].savingsTotal : 0)} color={colors.savingsBorder} />
+        <HeroStat label="Progress" value={`${s.pct_complete}%`} color={colors.white} />
       </View>
     </View>
   );
 }
 
-function Hero({ projection, variant }) {
-  if (variant === 'networth') return <HeroNetworth projection={projection} />;
-  if (variant === 'journey') return <HeroJourney projection={projection} />;
-  return <HeroDates projection={projection} />;
+function sumDebtPaid(projection, throughMonth) {
+  let s = 0;
+  for (let i = 0; i < throughMonth && i < projection.rows.length; i++) {
+    s += projection.rows[i].debtPaid || 0;
+  }
+  return s;
+}
+
+function HeroStat({ label, value, color }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text
+        style={{
+          color: 'rgba(255,255,255,0.5)',
+          fontSize: 9,
+          fontWeight: '800',
+          letterSpacing: 1.4,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: 17,
+          fontWeight: '800',
+          color: color || colors.white,
+          marginTop: 3,
+          letterSpacing: -0.2,
+        }}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
 }
 
 // ── Mini roadmap (horizontal scroll) ──────────────────────────────
@@ -918,7 +803,7 @@ function GoalProgressList({ projection }) {
 
 // ── Screen ────────────────────────────────────────────────────────
 
-export function PlanScreen({ projection, heroVariant, onHero }) {
+export function PlanScreen({ projection }) {
   const { plan, summary } = projection;
 
   return (
@@ -926,16 +811,11 @@ export function PlanScreen({ projection, heroVariant, onHero }) {
       style={{ flex: 1, backgroundColor: colors.paper }}
       contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
     >
-      <Kicker>{summary.everything_done ? `Your ${summary.final_month}-month plan` : 'Your future'}</Kicker>
-      <ScreenTitle>{plan.name || 'Our Plan'}</ScreenTitle>
+      <Kicker>{summary.everything_done ? `Your ${summary.final_month}-month plan` : 'Your path to freedom'}</Kicker>
+      <ScreenTitle>{plan.name || 'My Plan'}</ScreenTitle>
 
-      <View style={{ marginBottom: 14 }}>
-        <MissionCard projection={projection} />
-      </View>
-
-      <HeroSwitcher value={heroVariant} onChange={onHero} />
-      <View style={{ marginBottom: 14 }}>
-        <Hero projection={projection} variant={heroVariant} />
+      <View style={{ marginBottom: 18 }}>
+        <CountdownHero projection={projection} />
       </View>
 
       <Text style={[type.label, { fontSize: 10, letterSpacing: 1.5, marginBottom: 10 }]}>

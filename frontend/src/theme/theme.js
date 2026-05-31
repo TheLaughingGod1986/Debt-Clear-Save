@@ -122,6 +122,15 @@ export const yearsMonths = (n) => {
   return `${y} yr ${mo} mo`;
 };
 
+// Days from today until the start of (now + monthIndex). Used by the
+// countdown hero. Returns 0 if month is in the past.
+export const daysUntil = (monthIndex, fromDate = new Date()) => {
+  if (!monthIndex || monthIndex <= 0) return 0;
+  const target = new Date(fromDate.getFullYear(), fromDate.getMonth() + monthIndex, 1);
+  const diffMs = target.getTime() - fromDate.getTime();
+  return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+};
+
 export const yearsMonthsLong = (n) => {
   if (!n) return '—';
   const y = Math.floor(n / 12);

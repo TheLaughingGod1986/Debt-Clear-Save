@@ -18,7 +18,7 @@ export const uid = () => Math.random().toString(36).slice(2, 9);
 // Realistic default household with 4 debts of differing APR + size so
 // avalanche and snowball produce visibly different orders.
 export const DEFAULT_PLAN = {
-  name: 'Your Freedom Plan',
+  name: 'My Debt Freedom Plan',
   strategy: 'avalanche',
   monthlyBudget: 2092,
   allowanceYou: 0,

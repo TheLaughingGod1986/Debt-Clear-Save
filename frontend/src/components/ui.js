@@ -131,14 +131,6 @@ export function GrowBar({ pct, color, track, height = 8, delay = 0 }) {
   );
 }
 
-// Back-compat alias for older callers.
-export const ProgressBar = ({ pct, label, color }) => (
-  <View>
-    <GrowBar pct={pct} color={color} height={10} />
-    {label ? <Text style={{ fontSize: 11, color: colors.muted, marginTop: 6 }}>{label}</Text> : null}
-  </View>
-);
-
 // Horizontal segmented allocation bar.
 export function SegmentBar({ segments, height = 16 }) {
   const total = segments.reduce((s, x) => s + (x.value || 0), 0) || 1;
@@ -424,55 +416,3 @@ export function Avatar({ name, color, size = 26 }) {
   );
 }
 
-// ── Legacy compat — older PhaseCard kept as a thin shim ───────────
-
-export function PhaseCard({ accent, label, title, rows, goal, goalBg, goalColor }) {
-  return (
-    <View
-      style={{
-        flex: 1,
-        borderWidth: 1.5,
-        borderColor: colors.line,
-        borderTopColor: accent,
-        borderTopWidth: 4,
-        borderRadius: radius.md,
-        padding: 16,
-        backgroundColor: colors.white,
-      }}
-    >
-      <Text style={[type.label, { color: accent }]}>{label}</Text>
-      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.ink, marginVertical: 6 }}>
-        {title}
-      </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-        {rows.map((r) => (
-          <View
-            key={r.k}
-            style={{
-              width: '47%',
-              backgroundColor: colors.paper,
-              borderRadius: radius.sm,
-              paddingVertical: 6,
-              alignItems: 'center',
-              margin: '1.5%',
-            }}
-          >
-            <Text style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: colors.muted }}>
-              {r.k}
-            </Text>
-            <Text
-              style={{ fontSize: 13, fontWeight: '700', color: r.color || colors.ink, marginTop: 1 }}
-            >
-              {r.v}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <View style={{ backgroundColor: goalBg, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.sm }}>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: goalColor, textAlign: 'center' }}>
-          {goal}
-        </Text>
-      </View>
-    </View>
-  );
-}

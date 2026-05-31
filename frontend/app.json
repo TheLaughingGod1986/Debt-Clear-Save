@@ -1,12 +1,24 @@
 {
   "expo": {
-    "name": "Road to Debt Freedom",
+    "name": "Debt Freedom",
     "slug": "debt-freedom",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "splash": { "backgroundColor": "#0d1b2a" },
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.you.debtfreedom" },
-    "android": { "package": "com.you.debtfreedom" }
+    "splash": {
+      "backgroundColor": "#0d1b2a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.benoats.debtfreedom",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.benoats.debtfreedom",
+      "versionCode": 1
+    }
   }
 }
