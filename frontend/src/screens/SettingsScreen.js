@@ -1,118 +1,313 @@
-import React, { useState, useEffect } from 'react';
+// SettingsScreen.js — strategy switch, debts editor, goals editor, reset.
+// Pared-down port of settings.jsx — covers the essentials.
+
+import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TextInput, Pressable,
-  KeyboardAvoidingView, Platform, Alert,
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { colors, spacing, radius, gbp } from '../theme/theme';
-import { SectionHead } from '../components/ui';
+import { colors, type, radius, fonts, gbp } from '../theme/theme';
+import {
+  Kicker,
+  ScreenTitle,
+  SectionHead,
+  Segmented,
+  PrimaryButton,
+  GhostButton,
+} from '../components/ui';
 
-const FIELDS = [
-  { key: 'credit_card', label: 'Credit card balance', group: 'Starting balances' },
-  { key: 'dmp_balance', label: 'DMP balance' },
-  { key: 'equity', label: 'Home equity (now)' },
-  { key: 'savings', label: 'Savings (now)' },
-  { key: 'monthly_budget', label: 'Total monthly budget', group: 'Monthly strategy' },
-  { key: 'p1_cc_payment', label: 'Phase 1 · CC payment' },
-  { key: 'p1_dmp_payment', label: 'Phase 1 · DMP payment' },
-  { key: 'p1_savings', label: 'Phase 1 · savings' },
-  { key: 'p2_dmp_payment', label: 'Phase 2 · DMP payment' },
-  { key: 'p2_savings', label: 'Phase 2 · savings' },
-  { key: 'equity_growth', label: 'Equity growth / month' },
-  { key: 'savings_target', label: 'Savings target', group: 'Goal' },
-];
+// ── Inline number/text field used throughout the editor ──────────
 
-export default function SettingsScreen({ projection, onSave }) {
-  const plan = projection?.plan;
-  const [draft, setDraft] = useState({});
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (plan) {
-      const d = {};
-      FIELDS.forEach((f) => { d[f.key] = String(plan[f.key]); });
-      setDraft(d);
-    }
-  }, [plan?.id]);
-
-  if (!plan) {
-    return <View style={s.center}><Text style={{ color: colors.muted }}>No plan loaded.</Text></View>;
-  }
-
-  const setField = (key, val) => setDraft((d) => ({ ...d, [key]: val }));
-
-  const handleSave = async () => {
-    const patch = {};
-    for (const f of FIELDS) {
-      const num = parseFloat(draft[f.key]);
-      if (isNaN(num) || num < 0) {
-        Alert.alert('Check your numbers', `"${f.label}" must be a number of 0 or more.`);
-        return;
-      }
-      patch[f.key] = num;
-    }
-    setSaving(true);
-    try {
-      await onSave(patch);
-      Alert.alert('Saved', 'Your plan was updated and the projection recalculated.');
-    } catch (e) {
-      Alert.alert('Could not save', String(e.message || e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
+function Field({ label, value, onChangeText, prefix, suffix, keyboardType = 'default' }) {
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={s.screen} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 64 }} keyboardShouldPersistTaps="handled">
-        <Text style={s.kicker}>Adjust the plan</Text>
-        <Text style={s.title}>Settings</Text>
-        <Text style={s.sub}>Change any figure and save — the whole journey recalculates instantly.</Text>
-
-        {FIELDS.map((f) => (
-          <View key={f.key}>
-            {f.group ? <SectionHead>{f.group}</SectionHead> : null}
-            <View style={s.field}>
-              <Text style={s.fieldLabel}>{f.label}</Text>
-              <View style={s.inputWrap}>
-                <Text style={s.poundSign}>£</Text>
-                <TextInput
-                  style={s.input}
-                  value={draft[f.key] ?? ''}
-                  onChangeText={(v) => setField(f.key, v.replace(/[^0-9.]/g, ''))}
-                  keyboardType="decimal-pad"
-                  placeholder="0"
-                  placeholderTextColor={colors.muted}
-                />
-              </View>
-            </View>
-          </View>
-        ))}
-
-        <Pressable style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-          <Text style={s.saveText}>{saving ? 'Saving…' : 'Save & recalculate'}</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <View style={{ flex: 1, marginVertical: 4 }}>
+      <Text
+        style={{
+          fontSize: 10,
+          fontWeight: '700',
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          color: colors.muted,
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: 8,
+          paddingHorizontal: 10,
+        }}
+      >
+        {prefix ? (
+          <Text style={{ color: colors.muted, marginRight: 4 }}>{prefix}</Text>
+        ) : null}
+        <TextInput
+          value={String(value ?? '')}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          style={{ flex: 1, paddingVertical: 9, fontSize: 14, color: colors.ink, fontWeight: '600' }}
+        />
+        {suffix ? (
+          <Text style={{ color: colors.muted, marginLeft: 4 }}>{suffix}</Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
-const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.paper },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.paper },
-  kicker: { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: colors.muted, marginBottom: 4 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink },
-  sub: { fontSize: 13, color: colors.muted, marginTop: 2, marginBottom: spacing.sm },
-  field: { marginBottom: spacing.sm },
-  fieldLabel: { fontSize: 12, color: colors.muted, marginBottom: 4, fontWeight: '600' },
-  inputWrap: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
-    borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: 12,
-  },
-  poundSign: { fontSize: 16, color: colors.muted, marginRight: 4 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 16, color: colors.ink },
-  saveBtn: {
-    marginTop: spacing.lg, backgroundColor: colors.ink, borderRadius: radius.md,
-    paddingVertical: 16, alignItems: 'center',
-  },
-  saveText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-});
+// ── Editor for a single debt ────────────────────────────────────
+
+function DebtRow({ debt, onChange, onDelete }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.white,
+        borderWidth: 1.5,
+        borderColor: colors.line,
+        borderRadius: radius.md,
+        padding: 12,
+        marginBottom: 8,
+      }}
+    >
+      <Field
+        label="Name"
+        value={debt.name}
+        onChangeText={(t) => onChange({ ...debt, name: t })}
+      />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Field
+          label="Balance"
+          value={debt.balance}
+          onChangeText={(t) => onChange({ ...debt, balance: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+          prefix="£"
+          keyboardType="decimal-pad"
+        />
+        <View style={{ width: 8 }} />
+        <Field
+          label="APR"
+          value={debt.apr}
+          onChangeText={(t) => onChange({ ...debt, apr: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+          suffix="%"
+          keyboardType="decimal-pad"
+        />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Field
+          label="Minimum payment"
+          value={debt.minPayment}
+          onChangeText={(t) => onChange({ ...debt, minPayment: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+          prefix="£"
+          keyboardType="decimal-pad"
+        />
+        <View style={{ width: 8 }} />
+        <Field
+          label="Started at"
+          value={debt.original}
+          onChangeText={(t) => onChange({ ...debt, original: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+          prefix="£"
+          keyboardType="decimal-pad"
+        />
+      </View>
+      <TouchableOpacity onPress={onDelete} style={{ marginTop: 8 }}>
+        <Text style={{ color: colors.cc, fontSize: 12, fontWeight: '700' }}>Remove debt</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function GoalRow({ goal, onChange, onDelete }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.white,
+        borderWidth: 1.5,
+        borderColor: colors.line,
+        borderRadius: radius.md,
+        padding: 12,
+        marginBottom: 8,
+      }}
+    >
+      <Field label="Name" value={goal.name} onChangeText={(t) => onChange({ ...goal, name: t })} />
+      <Field
+        label="Target"
+        value={goal.target}
+        onChangeText={(t) => onChange({ ...goal, target: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+        prefix="£"
+        keyboardType="decimal-pad"
+      />
+      <TouchableOpacity onPress={onDelete} style={{ marginTop: 8 }}>
+        <Text style={{ color: colors.cc, fontSize: 12, fontWeight: '700' }}>Remove goal</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ── Screen ───────────────────────────────────────────────────────
+
+export function SettingsScreen({ plan, projection, onSave, onReset }) {
+  const [draft, setDraft] = useState(() => JSON.parse(JSON.stringify(plan)));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(plan);
+
+  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
+  const updateDebt = (i, debt) => {
+    const next = [...draft.debts];
+    next[i] = debt;
+    update({ debts: next });
+  };
+  const removeDebt = (i) => update({ debts: draft.debts.filter((_, j) => j !== i) });
+  const addDebt = () =>
+    update({
+      debts: [
+        ...draft.debts,
+        {
+          id: Math.random().toString(36).slice(2, 9),
+          name: 'New debt',
+          balance: 1000,
+          original: 1000,
+          apr: 19.9,
+          minPayment: 25,
+        },
+      ],
+    });
+  const updateGoal = (i, goal) => {
+    const next = [...draft.goals];
+    next[i] = goal;
+    update({ goals: next });
+  };
+  const removeGoal = (i) => update({ goals: draft.goals.filter((_, j) => j !== i) });
+  const addGoal = () =>
+    update({
+      goals: [
+        ...draft.goals,
+        { id: Math.random().toString(36).slice(2, 9), name: 'New goal', target: 1000 },
+      ],
+    });
+
+  const confirmReset = () =>
+    Alert.alert(
+      'Reset everything?',
+      'This clears all ticked months, debts, goals, and personal data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reset', style: 'destructive', onPress: onReset },
+      ]
+    );
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.paper }}
+      contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
+    >
+      <Kicker>Plan controls</Kicker>
+      <ScreenTitle>Settings</ScreenTitle>
+
+      <SectionHead>Plan</SectionHead>
+      <Field label="Plan name" value={draft.name} onChangeText={(t) => update({ name: t })} />
+      <Field
+        label="Protected savings while in debt"
+        value={draft.saveWhileInDebt}
+        onChangeText={(t) => update({ saveWhileInDebt: Number(t.replace(/[^0-9.]/g, '')) || 0 })}
+        prefix="£"
+        suffix="/mo"
+        keyboardType="decimal-pad"
+      />
+
+      <SectionHead>Payoff strategy</SectionHead>
+      <Segmented
+        value={draft.strategy}
+        onChange={(v) => update({ strategy: v })}
+        options={[
+          { value: 'avalanche', label: 'Avalanche (highest APR)' },
+          { value: 'snowball', label: 'Snowball (smallest)' },
+        ]}
+      />
+      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 8, lineHeight: 16 }}>
+        Avalanche minimises interest by attacking the highest-APR debt first. Snowball pays the
+        smallest balance first for early psychological wins.
+      </Text>
+
+      <SectionHead right={`${draft.debts.length}`}>Debts</SectionHead>
+      {draft.debts.map((d, i) => (
+        <DebtRow
+          key={d.id}
+          debt={d}
+          onChange={(nx) => updateDebt(i, nx)}
+          onDelete={() => removeDebt(i)}
+        />
+      ))}
+      <GhostButton onPress={addDebt}>+ Add debt</GhostButton>
+
+      <SectionHead right={`${draft.goals.length}`}>Goals</SectionHead>
+      {draft.goals.map((g, i) => (
+        <GoalRow
+          key={g.id}
+          goal={g}
+          onChange={(nx) => updateGoal(i, nx)}
+          onDelete={() => removeGoal(i)}
+        />
+      ))}
+      <GhostButton onPress={addGoal}>+ Add goal</GhostButton>
+
+      <SectionHead>Today's totals</SectionHead>
+      <View
+        style={{
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: radius.md,
+          padding: 14,
+        }}
+      >
+        <Text style={{ fontSize: 12, color: colors.muted }}>
+          Total debt{'  '}
+          <Text style={{ color: colors.cc, fontWeight: '800' }}>
+            {gbp(projection.summary.start_debt)}
+          </Text>
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
+          Total goal targets{'  '}
+          <Text style={{ color: colors.savings, fontWeight: '800' }}>
+            {gbp(projection.summary.goal_total)}
+          </Text>
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
+          Monthly budget{'  '}
+          <Text style={{ color: colors.ink, fontWeight: '800' }}>
+            {gbp(projection.summary.budget)}/mo
+          </Text>
+        </Text>
+      </View>
+
+      <View style={{ marginTop: 24 }}>
+        <PrimaryButton onPress={() => onSave(draft)} disabled={!dirty}>
+          {dirty ? 'Save changes' : 'Up to date'}
+        </PrimaryButton>
+      </View>
+
+      <SectionHead>Danger zone</SectionHead>
+      <TouchableOpacity
+        onPress={confirmReset}
+        style={{
+          borderWidth: 1.5,
+          borderColor: colors.ccBorder,
+          backgroundColor: colors.ccSoft,
+          borderRadius: radius.md,
+          paddingVertical: 13,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: colors.cc, fontWeight: '700', fontSize: 14 }}>Reset everything</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}

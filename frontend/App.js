@@ -1,125 +1,131 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar, Alert,
-} from 'react-native';
-import { colors, spacing } from './src/theme/theme';
-import { api } from './src/api/client';
-import OverviewScreen from './src/screens/OverviewScreen';
-import TrackerScreen from './src/screens/TrackerScreen';
-import SettingsScreen from './src/screens/SettingsScreen';
+// App.js — auth → onboarding → tabs router. v1: skips auth + onboarding,
+// drops straight into the 4-tab app with the default plan.
+//
+// Persistence: AsyncStorage holds the plan, ticked months and last-active
+// tab. The FastAPI backend (CLAUDE.md verified milestones) is preserved
+// untouched but not used by this new UI — the JS engine handles projection
+// client-side. Wiring the backend back in is task #7.
 
-const TABS = [
-  { key: 'overview', label: 'Plan', icon: '◎' },
-  { key: 'tracker', label: 'Tracker', icon: '☑' },
-  { key: 'settings', label: 'Settings', icon: '⚙' },
-];
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, SafeAreaView, StatusBar } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { colors } from './src/theme/theme';
+import { DEFAULT_PLAN, buildProjection } from './src/engine/projection';
+import { TabBar } from './src/components/ui';
+import { PlanScreen } from './src/screens/PlanScreen';
+import { TrackerScreen } from './src/screens/TrackerScreen';
+import { AwardsScreen } from './src/screens/AwardsScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+
+const LS = {
+  plan: 'dcs3.plan',
+  done: 'dcs3.done',
+  tab: 'dcs3.tab',
+  hero: 'dcs3.hero',
+};
 
 export default function App() {
-  const [tab, setTab] = useState('overview');
-  const [planId, setPlanId] = useState(null);
-  const [projection, setProjection] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [plan, setPlan] = useState(DEFAULT_PLAN);
+  const [done, setDone] = useState(new Set());
+  const [tab, setTab] = useState('plan');
+  const [heroVariant, setHeroVariant] = useState('dates');
+  const [hydrated, setHydrated] = useState(false);
 
-  // Bootstrap: reuse the first plan, or create a default one.
+  // Hydrate from AsyncStorage once.
   useEffect(() => {
     (async () => {
       try {
-        setLoading(true);
-        const plans = await api.listPlans();
-        const id = plans.length ? plans[0].id : (await api.createPlan({ name: 'Our Plan' })).id;
-        setPlanId(id);
-        setProjection(await api.getProjection(id));
-        setError(null);
+        const [p, d, t, h] = await Promise.all([
+          AsyncStorage.getItem(LS.plan),
+          AsyncStorage.getItem(LS.done),
+          AsyncStorage.getItem(LS.tab),
+          AsyncStorage.getItem(LS.hero),
+        ]);
+        if (p) setPlan(JSON.parse(p));
+        if (d) setDone(new Set(JSON.parse(d)));
+        if (t) setTab(t);
+        if (h) setHeroVariant(h);
       } catch (e) {
-        setError(e.message || String(e));
-      } finally {
-        setLoading(false);
+        // ignore — first run
       }
+      setHydrated(true);
     })();
   }, []);
 
-  const refresh = useCallback(async () => {
-    if (!planId) return;
-    try {
-      setLoading(true);
-      setProjection(await api.getProjection(planId));
-      setError(null);
-    } catch (e) {
-      setError(e.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [planId]);
+  // Persist whenever the relevant state changes (post-hydration only).
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(LS.plan, JSON.stringify(plan)).catch(() => {});
+  }, [plan, hydrated]);
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(LS.done, JSON.stringify([...done])).catch(() => {});
+  }, [done, hydrated]);
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(LS.tab, tab).catch(() => {});
+  }, [tab, hydrated]);
+  useEffect(() => {
+    if (hydrated) AsyncStorage.setItem(LS.hero, heroVariant).catch(() => {});
+  }, [heroVariant, hydrated]);
 
-  const toggleMonth = useCallback(async (month, done) => {
-    if (!planId) return;
-    // optimistic update
-    setProjection((prev) => prev && ({
-      ...prev,
-      rows: prev.rows.map((r) => (r.month === month ? { ...r, done } : r)),
-    }));
-    try {
-      await api.setProgress(planId, month, { done });
-      setProjection(await api.getProjection(planId)); // resync summary stats
-    } catch (e) {
-      Alert.alert('Could not update', e.message || String(e));
-      await refresh();
-    }
-  }, [planId, refresh]);
+  const projection = useMemo(() => buildProjection(plan, done), [plan, done]);
 
-  const savePlan = useCallback(async (patch) => {
-    if (!planId) return;
-    await api.updatePlan(planId, patch);
-    setProjection(await api.getProjection(planId));
-  }, [planId]);
+  const toggleMonth = (row) =>
+    setDone((prev) => {
+      const next = new Set(prev);
+      if (next.has(row.month)) next.delete(row.month);
+      else next.add(row.month);
+      return next;
+    });
+
+  const setOverpay = (month, amount) =>
+    setPlan((p) => {
+      const over = { ...(p.overpayments || {}) };
+      const v = Number(amount) || 0;
+      if (v > 0) over[month] = v;
+      else delete over[month];
+      return { ...p, overpayments: over };
+    });
+
+  const reset = () => {
+    setPlan(JSON.parse(JSON.stringify(DEFAULT_PLAN)));
+    setDone(new Set());
+    setTab('plan');
+    setHeroVariant('dates');
+  };
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
+        <StatusBar barStyle="dark-content" />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
-
-      {error ? (
-        <View style={s.errorBar}>
-          <Text style={s.errorText}>⚠ {error}</Text>
-          <Pressable onPress={refresh}><Text style={s.retry}>Retry</Text></Pressable>
-        </View>
-      ) : null}
-
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
+      <StatusBar barStyle="dark-content" />
       <View style={{ flex: 1 }}>
-        {tab === 'overview' && <OverviewScreen projection={projection} loading={loading} onRefresh={refresh} />}
-        {tab === 'tracker' && <TrackerScreen projection={projection} loading={loading} onToggleMonth={toggleMonth} />}
-        {tab === 'settings' && <SettingsScreen projection={projection} onSave={savePlan} />}
+        {tab === 'plan' && (
+          <PlanScreen projection={projection} heroVariant={heroVariant} onHero={setHeroVariant} />
+        )}
+        {tab === 'tracker' && (
+          <TrackerScreen
+            projection={projection}
+            onToggleMonth={toggleMonth}
+            onOverpay={setOverpay}
+          />
+        )}
+        {tab === 'awards' && <AwardsScreen projection={projection} />}
+        {tab === 'settings' && (
+          <SettingsScreen
+            plan={plan}
+            projection={projection}
+            onSave={setPlan}
+            onReset={reset}
+          />
+        )}
       </View>
-
-      <View style={s.tabBar}>
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          return (
-            <Pressable key={t.key} style={s.tab} onPress={() => setTab(t.key)}>
-              <Text style={[s.tabIcon, active && s.tabActive]}>{t.icon}</Text>
-              <Text style={[s.tabLabel, active && s.tabActive]}>{t.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <TabBar tab={tab} onTab={setTab} />
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.paper },
-  errorBar: {
-    backgroundColor: colors.ccSoft, paddingHorizontal: spacing.md, paddingVertical: 10,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
-  errorText: { color: colors.cc, fontSize: 12, flexShrink: 1 },
-  retry: { color: colors.cc, fontWeight: '700', fontSize: 12 },
-  tabBar: {
-    flexDirection: 'row', backgroundColor: colors.white,
-    borderTopWidth: 1, borderTopColor: colors.line, paddingBottom: 6, paddingTop: 8,
-  },
-  tab: { flex: 1, alignItems: 'center', gap: 2 },
-  tabIcon: { fontSize: 20, color: colors.muted },
-  tabLabel: { fontSize: 11, color: colors.muted, fontWeight: '600' },
-  tabActive: { color: colors.ink },
-});

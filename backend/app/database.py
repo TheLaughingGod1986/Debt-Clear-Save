@@ -7,6 +7,7 @@ Two tables:
 from __future__ import annotations
 
 import datetime as dt
+from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -84,9 +85,9 @@ class MonthProgressModel(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Optional real-world figures the user can log against the projection.
-    actual_saved: Mapped[float | None] = mapped_column(Float, nullable=True)
-    note: Mapped[str | None] = mapped_column(String, nullable=True)
-    completed_at: Mapped[dt.datetime | None] = mapped_column(
+    actual_saved: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    completed_at: Mapped[Optional[dt.datetime]] = mapped_column(
         DateTime, nullable=True
     )
 

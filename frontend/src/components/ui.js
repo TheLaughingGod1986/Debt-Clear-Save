@@ -1,88 +1,398 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, spacing, type, gbp } from '../theme/theme';
+// ui.js — shared design-system primitives for React Native.
+// Ported from the design package's ui-primitives.jsx (web/HTML prototype).
 
-// --------------------------------------------------------------------------- //
-// Section heading with a hairline rule
-// --------------------------------------------------------------------------- //
-export function SectionHead({ children }) {
-  return (
-    <View style={s.sectionHead}>
-      <Text style={type.label}>{children}</Text>
-      <View style={s.hairline} />
-    </View>
-  );
+import React, { useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Animated,
+  Easing,
+} from 'react-native';
+import { colors, type, radius, fonts } from '../theme/theme';
+
+// ── Type ───────────────────────────────────────────────────────────
+
+export function Kicker({ children, style }) {
+  return <Text style={[type.kicker, { marginBottom: 4 }, style]}>{children}</Text>;
 }
 
-// --------------------------------------------------------------------------- //
-// A single key figure in a bordered card
-// --------------------------------------------------------------------------- //
-export function StatCard({ label, value, sub, color, border, bg }) {
-  return (
-    <View style={[s.stat, border && { borderColor: border }, bg && { backgroundColor: bg }]}>
-      <Text style={type.label}>{label}</Text>
-      <Text style={[s.statValue, color && { color }]}>{value}</Text>
-      {sub ? <Text style={s.statSub}>{sub}</Text> : null}
-    </View>
-  );
+export function ScreenTitle({ children, style }) {
+  return <Text style={[type.h1, { marginBottom: 16 }, style]}>{children}</Text>;
 }
 
-// --------------------------------------------------------------------------- //
-// Progress ring (pure SVG-free: two stacked circles via borders is fiddly, so
-// we use a simple horizontal bar that reads clearly at a glance)
-// --------------------------------------------------------------------------- //
-export function ProgressBar({ pct, label }) {
-  const clamped = Math.max(0, Math.min(100, pct || 0));
+export function SectionHead({ children, right }) {
   return (
-    <View style={{ width: '100%' }}>
-      <View style={s.barTrack}>
-        <View style={[s.barFill, { width: `${clamped}%` }]} />
+    <View style={{ marginTop: 24, marginBottom: 14 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <Text style={[type.label, { letterSpacing: 1.5 }]}>{children}</Text>
+        {right ? (
+          <Text style={[type.label, { letterSpacing: 0.5 }]}>{right}</Text>
+        ) : null}
       </View>
-      {label ? <Text style={s.barLabel}>{label}</Text> : null}
+      <View style={{ height: 1, backgroundColor: colors.line, marginTop: 6 }} />
     </View>
   );
 }
 
-// --------------------------------------------------------------------------- //
-// Phase summary card
-// --------------------------------------------------------------------------- //
-export function PhaseCard({ accent, label, title, rows, goal, goalBg, goalColor }) {
+// ── Cards ──────────────────────────────────────────────────────────
+
+export function StatCard({ label, value, sub, color, border, bg, big, style }) {
   return (
-    <View style={[s.phase, { borderTopColor: accent, borderTopWidth: 4 }]}>
-      <Text style={[type.label, { color: accent }]}>{label}</Text>
-      <Text style={s.phaseTitle}>{title}</Text>
-      <View style={s.phaseCells}>
-        {rows.map((r) => (
-          <View key={r.k} style={s.phaseCell}>
-            <Text style={s.phaseCellK}>{r.k}</Text>
-            <Text style={[s.phaseCellV, r.color && { color: r.color }]}>{r.v}</Text>
-          </View>
-        ))}
-      </View>
-      <View style={[s.goalPill, { backgroundColor: goalBg }]}>
-        <Text style={[s.goalText, { color: goalColor }]}>{goal}</Text>
-      </View>
+    <View
+      style={[
+        {
+          flex: 1,
+          backgroundColor: bg || colors.white,
+          borderWidth: 1.5,
+          borderColor: border || colors.line,
+          borderRadius: radius.md,
+          padding: 14,
+        },
+        style,
+      ]}
+    >
+      <Text style={[type.label, { fontSize: 9, letterSpacing: 1.4 }]}>{label}</Text>
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: big ? 28 : 22,
+          fontWeight: '800',
+          color: color || colors.ink,
+          marginTop: 4,
+          letterSpacing: -0.2,
+        }}
+      >
+        {value}
+      </Text>
+      {sub ? <Text style={[type.mini, { marginTop: 3 }]}>{sub}</Text> : null}
     </View>
   );
 }
 
-// --------------------------------------------------------------------------- //
-// Vertical milestone timeline
-// --------------------------------------------------------------------------- //
+// ── Progress ───────────────────────────────────────────────────────
+
+export function MiniBar({ pct, color, track, height = 7 }) {
+  const c = Math.max(0, Math.min(100, pct || 0));
+  return (
+    <View
+      style={{
+        height,
+        backgroundColor: track || colors.lineSoft,
+        borderRadius: radius.pill,
+        overflow: 'hidden',
+      }}
+    >
+      <View
+        style={{
+          height: '100%',
+          width: `${c}%`,
+          backgroundColor: color || colors.ink,
+          borderRadius: radius.pill,
+        }}
+      />
+    </View>
+  );
+}
+
+// Animated grow bar (0 → pct on mount).
+export function GrowBar({ pct, color, track, height = 8, delay = 0 }) {
+  const target = Math.max(0, Math.min(100, pct || 0));
+  const anim = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: target,
+      duration: 800,
+      delay: 60 + delay,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [target, delay]);
+  const width = anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+  return (
+    <View
+      style={{
+        height,
+        backgroundColor: track || colors.lineSoft,
+        borderRadius: radius.pill,
+        overflow: 'hidden',
+      }}
+    >
+      <Animated.View
+        style={{
+          height: '100%',
+          width,
+          backgroundColor: color || colors.ink,
+          borderRadius: radius.pill,
+        }}
+      />
+    </View>
+  );
+}
+
+// Back-compat alias for older callers.
+export const ProgressBar = ({ pct, label, color }) => (
+  <View>
+    <GrowBar pct={pct} color={color} height={10} />
+    {label ? <Text style={{ fontSize: 11, color: colors.muted, marginTop: 6 }}>{label}</Text> : null}
+  </View>
+);
+
+// Horizontal segmented allocation bar.
+export function SegmentBar({ segments, height = 16 }) {
+  const total = segments.reduce((s, x) => s + (x.value || 0), 0) || 1;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        height,
+        borderRadius: radius.pill,
+        overflow: 'hidden',
+        backgroundColor: colors.lineSoft,
+      }}
+    >
+      {segments.map(
+        (s, i) =>
+          s.value > 0 && (
+            <View
+              key={i}
+              style={{ width: `${(s.value / total) * 100}%`, backgroundColor: s.color }}
+            />
+          )
+      )}
+    </View>
+  );
+}
+
+// ── Buttons ────────────────────────────────────────────────────────
+
+export function PrimaryButton({ children, onPress, disabled, style }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        {
+          backgroundColor: colors.ink,
+          borderRadius: radius.md,
+          paddingVertical: 15,
+          paddingHorizontal: 20,
+          opacity: disabled ? 0.6 : pressed ? 0.7 : 1,
+          alignItems: 'center',
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: colors.white, fontSize: 15, fontWeight: '700' }}>{children}</Text>
+    </Pressable>
+  );
+}
+
+export function GhostButton({ children, onPress, style }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        {
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: radius.md,
+          paddingVertical: 13,
+          paddingHorizontal: 16,
+          alignItems: 'center',
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '700' }}>{children}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export function Segmented({ value, options, onChange }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: colors.lineSoft,
+        borderRadius: radius.md,
+        padding: 3,
+      }}
+    >
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <TouchableOpacity
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            style={{
+              flex: 1,
+              marginHorizontal: 1.5,
+              borderRadius: 8,
+              paddingVertical: 9,
+              paddingHorizontal: 6,
+              backgroundColor: on ? colors.white : 'transparent',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: on ? '800' : '600',
+                color: on ? colors.ink : colors.muted,
+              }}
+            >
+              {o.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// ── Pills + Chips ─────────────────────────────────────────────────
+
+export function Pill({ children, color, bg, border, style }) {
+  return (
+    <View
+      style={[
+        {
+          alignSelf: 'flex-start',
+          backgroundColor: bg || colors.savingsSoft,
+          paddingVertical: 3,
+          paddingHorizontal: 9,
+          borderRadius: radius.pill,
+          borderWidth: border ? 1 : 0,
+          borderColor: border,
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: color || colors.savings, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 }}>
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────
+
+export const DCS_TABS = [
+  { key: 'plan',     label: 'Plan',     icon: '◎' },
+  { key: 'tracker',  label: 'Tracker',  icon: '☑' },
+  { key: 'awards',   label: 'Awards',   icon: '★' },
+  { key: 'settings', label: 'Settings', icon: '⚙' },
+];
+
+export function TabBar({ tab, onTab }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.white,
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+        paddingTop: 8,
+        paddingBottom: 6,
+        flexDirection: 'row',
+      }}
+    >
+      {DCS_TABS.map((t) => {
+        const on = tab === t.key;
+        return (
+          <TouchableOpacity
+            key={t.key}
+            onPress={() => onTab(t.key)}
+            style={{ flex: 1, alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 20, color: on ? colors.ink : colors.muted, lineHeight: 22 }}>
+              {t.icon}
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: on ? '700' : '600',
+                color: on ? colors.ink : colors.muted,
+                marginTop: 2,
+              }}
+            >
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// ── Milestone Timeline ────────────────────────────────────────────
+
 export function MilestoneTimeline({ items }) {
   return (
     <View>
-      {items.map((it, idx) => (
-        <View key={idx} style={s.msRow}>
-          <View style={s.msRail}>
-            <View style={[s.msDot, { borderColor: it.color }, it.filled && { backgroundColor: it.color }]}>
-              <Text style={[s.msDotText, { color: it.filled ? colors.white : it.color }]}>{it.dot}</Text>
+      {items.map((it, i) => (
+        <View key={i} style={{ flexDirection: 'row' }}>
+          <View style={{ width: 40, alignItems: 'center' }}>
+            <View
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                borderWidth: 2.5,
+                borderColor: it.color,
+                backgroundColor: it.filled ? it.color : colors.white,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: it.filled ? colors.white : it.color,
+                  fontSize: (it.dot || '').length > 2 ? 9 : 11,
+                  fontWeight: '800',
+                }}
+              >
+                {it.dot}
+              </Text>
             </View>
-            {idx < items.length - 1 && <View style={s.msConn} />}
+            {i < items.length - 1 && (
+              <View style={{ width: 2.5, flex: 1, minHeight: 18, backgroundColor: colors.line }} />
+            )}
           </View>
-          <View style={s.msBody}>
-            <Text style={[s.msTitle, it.color && { color: it.color }]}>{it.title}</Text>
-            <Text style={s.msSub}>{it.sub}</Text>
+          <View style={{ flex: 1, paddingBottom: 16, paddingTop: 4, paddingLeft: 14 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+              }}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: it.color || colors.ink,
+                }}
+              >
+                {it.title}
+              </Text>
+              {it.when ? (
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted, marginLeft: 8 }}>
+                  {it.when}
+                </Text>
+              ) : null}
+            </View>
+            {it.chip ? (
+              <View style={{ marginTop: 5 }}>
+                <Pill>{it.chip}</Pill>
+              </View>
+            ) : null}
+            <Text style={[type.mini, { marginTop: it.chip ? 4 : 2, lineHeight: 16 }]}>
+              {it.sub}
+            </Text>
           </View>
         </View>
       ))}
@@ -90,50 +400,79 @@ export function MilestoneTimeline({ items }) {
   );
 }
 
-const s = StyleSheet.create({
-  sectionHead: { marginTop: spacing.lg, marginBottom: spacing.md },
-  hairline: { height: 1, backgroundColor: colors.line, marginTop: 6 },
+// ── Avatar ────────────────────────────────────────────────────────
 
-  stat: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.white,
-  },
-  statValue: { fontFamily: undefined, fontSize: 22, fontWeight: '800', color: colors.ink, marginTop: 2 },
-  statSub: { fontSize: 11, color: colors.muted, marginTop: 2 },
+export function Avatar({ name, color, size = 26 }) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: colors.white,
+      }}
+    >
+      <Text style={{ color: colors.white, fontSize: size * 0.42, fontWeight: '800' }}>
+        {initial}
+      </Text>
+    </View>
+  );
+}
 
-  barTrack: { height: 10, borderRadius: radius.pill, backgroundColor: colors.lineSoft, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.ink },
-  barLabel: { fontSize: 11, color: colors.muted, marginTop: 6 },
+// ── Legacy compat — older PhaseCard kept as a thin shim ───────────
 
-  phase: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.white,
-  },
-  phaseTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, marginVertical: 6 },
-  phaseCells: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  phaseCell: { width: '47%', backgroundColor: colors.paper, borderRadius: radius.sm, paddingVertical: 6, alignItems: 'center' },
-  phaseCellK: { fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: colors.muted },
-  phaseCellV: { fontSize: 13, fontWeight: '700', color: colors.ink, marginTop: 1 },
-  goalPill: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.sm },
-  goalText: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
-
-  msRow: { flexDirection: 'row', gap: spacing.md },
-  msRail: { alignItems: 'center', width: 36 },
-  msDot: {
-    width: 32, height: 32, borderRadius: 16, borderWidth: 2.5,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white,
-  },
-  msDotText: { fontSize: 11, fontWeight: '800' },
-  msConn: { width: 2.5, flex: 1, minHeight: 22, backgroundColor: colors.line },
-  msBody: { paddingBottom: spacing.md, paddingTop: 4, flex: 1 },
-  msTitle: { fontSize: 13, fontWeight: '700', color: colors.ink },
-  msSub: { fontSize: 11, color: colors.muted, marginTop: 2, lineHeight: 16 },
-});
+export function PhaseCard({ accent, label, title, rows, goal, goalBg, goalColor }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        borderWidth: 1.5,
+        borderColor: colors.line,
+        borderTopColor: accent,
+        borderTopWidth: 4,
+        borderRadius: radius.md,
+        padding: 16,
+        backgroundColor: colors.white,
+      }}
+    >
+      <Text style={[type.label, { color: accent }]}>{label}</Text>
+      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.ink, marginVertical: 6 }}>
+        {title}
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+        {rows.map((r) => (
+          <View
+            key={r.k}
+            style={{
+              width: '47%',
+              backgroundColor: colors.paper,
+              borderRadius: radius.sm,
+              paddingVertical: 6,
+              alignItems: 'center',
+              margin: '1.5%',
+            }}
+          >
+            <Text style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: colors.muted }}>
+              {r.k}
+            </Text>
+            <Text
+              style={{ fontSize: 13, fontWeight: '700', color: r.color || colors.ink, marginTop: 1 }}
+            >
+              {r.v}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <View style={{ backgroundColor: goalBg, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.sm }}>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: goalColor, textAlign: 'center' }}>
+          {goal}
+        </Text>
+      </View>
+    </View>
+  );
+}

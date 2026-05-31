@@ -7,7 +7,10 @@
 import { Platform } from 'react-native';
 
 // 10.0.2.2 is the Android emulator's alias for the host machine.
-const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+// Real iOS devices (Expo Go) need this machine's LAN IP — "localhost" would
+// resolve to the phone itself.
+const LAN_HOST = '192.168.1.107';
+const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : LAN_HOST;
 
 export const API_BASE = `http://${DEV_HOST}:8000`;
 
