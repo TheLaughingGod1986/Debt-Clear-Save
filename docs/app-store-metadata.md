@@ -42,7 +42,13 @@ Answer the questionnaire as follows:
 
 That's the entire answer. v1.0 has zero network calls, zero analytics, zero third-party SDKs. No further questions appear.
 
-**Privacy Policy URL:** required (see launch runbook §7 for a minimum policy).
+**Privacy Policy URL:** required.
+
+```
+https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/privacy.html
+```
+
+(Source HTML lives in `docs/public-pages/privacy.html`. To go live, enable GitHub Pages on the `main` branch / `/docs` folder — see `docs/public-pages/README.md`.)
 
 ---
 
@@ -117,13 +123,29 @@ debt,debtfree,payoff,budget,snowball,avalanche,creditcard,loan,finance,planner,t
 
 ### Support URL
 
-Required. Hosted privacy/support page (see launch runbook §7).
+Required. Use the hosted support page (see `docs/public-pages/README.md` for the GitHub Pages setup — takes 2 minutes):
 
-Example: `https://benoats.github.io/debt-freedom-web/support.html`
+```
+https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/support.html
+```
 
 ### Marketing URL
 
-Optional. Leave blank for v1.0.
+Optional. Either leave blank for v1.0, or point at the landing page that links to all three:
+
+```
+https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/
+```
+
+### Terms of Use (EULA)
+
+App Store Connect uses Apple's standard EULA by default — fine for v1.0. If you ever want to replace it with your own, the hosted terms page is here:
+
+```
+https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/terms.html
+```
+
+(It's also linked from the privacy + support pages so reviewers can reach it.)
 
 ### What's New in This Version (4000 char)
 

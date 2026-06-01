@@ -151,28 +151,36 @@ Then upload the build (it auto-attaches once it appears) and upload the 5 screen
 
 ---
 
-## 7 · Privacy policy + Support URL **(you)**
+## 7 · Privacy policy + Support URL **(you, 2 minutes)**
 
-Both are mandatory. Cheapest valid path:
+Both are mandatory. The static HTML is already in this repo at
+`docs/public-pages/` — privacy, support, terms, plus a landing index.
 
-**Privacy Policy** — host one HTML page. Use a free static host (GitHub Pages, Netlify, Vercel). A minimum-viable copy:
+To put them live:
+
+1. Open <https://github.com/TheLaughingGod1986/Debt-Clear-Save/settings/pages>
+2. **Source:** branch `main`, folder `/docs`
+3. **Save** → wait ~2 minutes for first deploy
+
+Resulting URLs (paste these into App Store Connect):
 
 ```
-Debt Freedom does not collect, store, transmit, or share any personal
-information. Everything you enter into the app — your debts, budget,
-goals, and progress — is stored privately on your device using iOS's
-on-device storage. We have no servers, no analytics, no tracking, and
-no third-party SDKs. If you delete the app, all your data is removed.
-
-For questions, contact: support@<your-domain>.
+Privacy: https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/privacy.html
+Support: https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/support.html
+Terms:   https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/terms.html
 ```
 
-**Support URL** — a one-page contact page works. Same hosts. Form or just an
-email address.
+Before going live, replace the `support@example.com` placeholder in
+`docs/public-pages/*.html` with your real address (or set up a forwarding
+alias):
 
-Recommended quick setup: a new public GitHub repo `benoats/debt-freedom-web`
-with two HTML files (`privacy.html`, `support.html`), enable GitHub Pages →
-free URLs in ~5 min.
+```bash
+cd docs/public-pages
+sed -i '' 's/support@example.com/<your real address>/g' *.html
+git commit -am "Use real support email" && git push
+```
+
+Full details + custom-domain instructions in `docs/public-pages/README.md`.
 
 ---
 
