@@ -294,9 +294,50 @@ export function SettingsScreen({ plan, projection, onSave, onReset }) {
         </PrimaryButton>
       </View>
 
+      <SectionHead>Privacy</SectionHead>
+      <View
+        style={{
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: radius.md,
+          padding: 14,
+        }}
+      >
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 6 }}>
+          Your data stays on this iPhone.
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 18 }}>
+          Debt Freedom does not collect, send, or sync any of your information. Everything you
+          enter is stored privately on this device. Cloud sync and accounts are coming soon.
+        </Text>
+      </View>
+
+      <SectionHead>About</SectionHead>
+      <View
+        style={{
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: radius.md,
+          padding: 14,
+        }}
+      >
+        <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 18 }}>
+          Debt Freedom is a planning tool, not financial advice. Projections are estimates based on
+          the figures you enter. Always check the numbers against your statements before making
+          financial decisions.
+        </Text>
+        <Text style={{ fontSize: 11, color: colors.muted, marginTop: 10 }}>
+          Debt Freedom · v1.0
+        </Text>
+      </View>
+
       <SectionHead>Danger zone</SectionHead>
       <TouchableOpacity
         onPress={confirmReset}
+        accessibilityLabel="Reset everything"
+        accessibilityHint="Clears your plan, debts, goals, and progress"
         style={{
           borderWidth: 1.5,
           borderColor: colors.ccBorder,

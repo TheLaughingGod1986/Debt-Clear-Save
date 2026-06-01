@@ -1,12 +1,14 @@
 // OnboardingScreen.js — 5-step activation flow.
 //
-// 1. Welcome   — brand + headline + "Get Started"
-// 2. Debts     — add 1..n debts (name/type, balance, APR, min payment)
-// 3. Budget    — monthly debt budget + payday + optional personal allowance
+// 1. Welcome    — brand + headline + "Get Started"
+// 2. Debts      — add 1..n debts (name/type, balance, APR, min payment)
+// 3. Budget     — monthly debt budget + payday + optional personal allowance
 // 4. Projection — instant "Debt free by <date>" + interest saved + CTA
-// 5. Save Plan — stubbed sign-in (only "Skip for now" works in v1)
+// 5. Save       — confirms local-only storage, Finish / Reset onboarding
 //
-// Goal: a brand-new user reaches step 4 in under 60 seconds.
+// Goal: a brand-new user reaches step 4 in under 60 seconds. v1.0 has no
+// cloud accounts — sign-in surfaces are intentionally absent; sync arrives
+// in v1.1.
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -24,7 +26,6 @@ import {
   Kicker,
   ScreenTitle,
   PrimaryButton,
-  GhostButton,
   GrowBar,
   SectionHead,
 } from '../components/ui';
@@ -820,14 +821,21 @@ function ProjStat({ label, value, color, bold }) {
   );
 }
 
-// ── Step 5: Save / Sign-in stub ───────────────────────────────────
+// ── Step 5: Save plan locally ──────────────────────────────────────
+//
+// v1.0 is fully offline — there are no accounts to sign into. This screen
+// just confirms local-only storage and lets the user either finish or
+// restart onboarding. Cloud sign-in arrives in v1.1.
 
-function StepSave({ onFinish }) {
-  const stub = (provider) =>
+function StepSave({ onFinish, onReset }) {
+  const confirmReset = () =>
     Alert.alert(
-      `${provider} sign-in`,
-      'Cloud sync is coming in our next update. For now, your plan saves on this device.',
-      [{ text: 'Continue locally', onPress: onFinish }]
+      'Start onboarding again?',
+      'This clears the debts and budget you just entered. Your data has not been saved yet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reset', style: 'destructive', onPress: onReset },
+      ]
     );
 
   return (
@@ -837,7 +845,9 @@ function StepSave({ onFinish }) {
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
       >
         <Text style={{ fontSize: 48, textAlign: 'center', marginTop: 8 }}>🔒</Text>
-        <ScreenTitle style={{ textAlign: 'center', marginTop: 16 }}>Save your plan</ScreenTitle>
+        <ScreenTitle style={{ textAlign: 'center', marginTop: 16 }}>
+          Save your plan on this device
+        </ScreenTitle>
         <Text
           style={{
             color: colors.muted,
@@ -848,16 +858,45 @@ function StepSave({ onFinish }) {
             paddingHorizontal: 12,
           }}
         >
-          Optionally create an account to sync across devices, track progress, and get gentle
-          reminders.
+          Your Debt Freedom plan is saved privately on this phone. Cloud sync and accounts are
+          coming soon.
         </Text>
 
-        <SignInButton provider="Apple"  icon=""  onPress={() => stub('Apple')}  bg={colors.ink} fg={colors.white} />
-        <SignInButton provider="Google" icon="G" onPress={() => stub('Google')} bg={colors.white} fg={colors.ink} bordered />
-        <SignInButton provider="Email"  icon="✉" onPress={() => stub('Email')}  bg={colors.white} fg={colors.ink} bordered />
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderWidth: 1.5,
+            borderColor: colors.line,
+            borderRadius: radius.md,
+            padding: 16,
+            marginBottom: 18,
+          }}
+        >
+          <PrivacyBullet
+            title="Stored on this iPhone only"
+            sub="Nothing is sent to a server. No account needed."
+          />
+          <PrivacyBullet
+            title="You're always in control"
+            sub="Reset everything any time from Settings."
+          />
+          <PrivacyBullet
+            title="Coming soon"
+            sub="Cloud sync, reminders, and multi-device support arrive in a free update."
+            last
+          />
+        </View>
 
-        <TouchableOpacity onPress={onFinish} style={{ marginTop: 18, alignItems: 'center', paddingVertical: 12 }}>
-          <Text style={{ fontSize: 14, color: colors.muted, fontWeight: '700' }}>Skip for now</Text>
+        <PrimaryButton onPress={onFinish}>Finish</PrimaryButton>
+
+        <TouchableOpacity
+          onPress={confirmReset}
+          accessibilityLabel="Reset onboarding"
+          style={{ marginTop: 14, alignItems: 'center', paddingVertical: 12 }}
+        >
+          <Text style={{ fontSize: 14, color: colors.muted, fontWeight: '700' }}>
+            Reset onboarding
+          </Text>
         </TouchableOpacity>
 
         <Text
@@ -870,33 +909,34 @@ function StepSave({ onFinish }) {
             paddingHorizontal: 18,
           }}
         >
-          Debt Freedom doesn't give financial advice. Always check the numbers against your
-          statements.
+          Debt Freedom is a planning tool, not financial advice. Always check the numbers against
+          your statements.
         </Text>
       </ScrollView>
     </View>
   );
 }
 
-function SignInButton({ provider, icon, onPress, bg, fg, bordered }) {
+function PrivacyBullet({ title, sub, last }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
+    <View
       style={{
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: bg,
-        borderRadius: radius.md,
-        borderWidth: bordered ? 1.5 : 0,
-        borderColor: colors.line,
-        paddingVertical: 14,
-        marginBottom: 10,
+        paddingVertical: 10,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: colors.lineSoft,
       }}
     >
-      {icon ? <Text style={{ color: fg, fontSize: 18, marginRight: 10, fontWeight: '800' }}>{icon}</Text> : null}
-      <Text style={{ color: fg, fontSize: 15, fontWeight: '700' }}>Continue with {provider}</Text>
-    </TouchableOpacity>
+      <Text style={{ color: colors.savings, fontSize: 18, marginRight: 12, fontWeight: '900' }}>
+        ✓
+      </Text>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>{title}</Text>
+        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2, lineHeight: 17 }}>
+          {sub}
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -928,6 +968,13 @@ export function OnboardingScreen({ onComplete }) {
   );
 
   const finish = () => onComplete(plan);
+  const resetWizard = () => {
+    setDebts([]);
+    setBudget(500);
+    setAllowance(0);
+    setPayday(25);
+    setStep(1);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
@@ -948,7 +995,7 @@ export function OnboardingScreen({ onComplete }) {
         />
       )}
       {step === 4 && <StepProjection plan={plan} onNext={() => setStep(5)} />}
-      {step === 5 && <StepSave onFinish={finish} />}
+      {step === 5 && <StepSave onFinish={finish} onReset={resetWizard} />}
     </View>
   );
 }

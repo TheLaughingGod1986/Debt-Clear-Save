@@ -274,6 +274,10 @@ function MonthCard({ row, overpay, onToggle, onOverpay }) {
         </View>
         <TouchableOpacity
           onPress={() => onToggle && onToggle(row)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: !!row.done }}
+          accessibilityLabel={`Month ${row.month}${row.done ? ' completed' : ''}`}
+          accessibilityHint={row.done ? 'Tap to mark as not done' : 'Tap to mark this month as done'}
           style={{
             width: 28,
             height: 28,
@@ -464,6 +468,55 @@ export function TrackerScreen({ projection, onToggleMonth, onOverpay }) {
   const { rows, summary } = projection;
   const overpayments = projection.plan.overpayments || {};
   const done = summary.months_done;
+
+  // Edge case: no debts entered (or all removed in Settings). Render a clean
+  // empty state instead of a blank ScrollView.
+  if (rows.length === 0) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.paper }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
+      >
+        <Kicker>Monthly tracking</Kicker>
+        <ScreenTitle>Tracker</ScreenTitle>
+        <View
+          style={{
+            backgroundColor: colors.white,
+            borderWidth: 1.5,
+            borderColor: colors.line,
+            borderRadius: radius.md,
+            padding: 22,
+            alignItems: 'center',
+            marginTop: 16,
+          }}
+        >
+          <Text style={{ fontSize: 38, marginBottom: 12 }}>📋</Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '800',
+              color: colors.ink,
+              textAlign: 'center',
+              marginBottom: 6,
+            }}
+          >
+            Nothing to track yet
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              color: colors.muted,
+              textAlign: 'center',
+              lineHeight: 19,
+              paddingHorizontal: 8,
+            }}
+          >
+            Add a debt or a savings goal in Settings to generate your monthly plan.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView

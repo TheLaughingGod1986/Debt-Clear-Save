@@ -24,7 +24,9 @@ function deriveProgress(projection) {
   const s = projection.summary;
   const md = s.months_done;
   const start = s.start_debt;
-  if (start <= 0) return { pct: 100, debtCleared: 0 };
+  // No starting debt = no journey to score. Pin to L1 so the user sees
+  // the level rail without a misleading "100% Debt Freedom" badge.
+  if (start <= 0) return { pct: 0, debtCleared: 0, noDebt: true };
   const at = md > 0 ? projection.rows[Math.min(md, projection.rows.length) - 1] : null;
   const debtCleared = at ? Math.max(0, start - at.debtLeft) : 0;
   const pct = Math.min(100, Math.round((debtCleared / start) * 100));

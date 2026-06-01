@@ -297,6 +297,9 @@ export function TabBar({ tab, onTab }) {
           <TouchableOpacity
             key={t.key}
             onPress={() => onTab(t.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={`${t.label} tab`}
             style={{ flex: 1, alignItems: 'center' }}
           >
             <Text style={{ fontSize: 20, color: on ? colors.ink : colors.muted, lineHeight: 22 }}>

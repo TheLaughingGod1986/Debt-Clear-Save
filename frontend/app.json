@@ -5,9 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0d1b2a"
     },
+    "assetBundlePatterns": ["assets/**/*"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.benoats.debtfreedom",
@@ -18,7 +22,11 @@
     },
     "android": {
       "package": "com.benoats.debtfreedom",
-      "versionCode": 1
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d1b2a"
+      }
     }
   }
 }
