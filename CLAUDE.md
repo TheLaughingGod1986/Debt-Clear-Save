@@ -1,125 +1,137 @@
-# CLAUDE.md — Project context for Claude Code
+# CLAUDE.md — Debt Freedom
 
-This file orients you (Claude Code) to the project. Read it fully before making changes.
+This file orients Claude Code to the project. Read it before making changes.
 
 ## What this is
 
-**Road to Debt Freedom** — a debt-payoff + savings tracker with a decoupled architecture:
+**Debt Freedom** — an iOS app that shows users exactly when they'll be debt free and how much interest they'll save. Built with React Native / Expo, fully offline in v1.0.
 
-- **Backend:** FastAPI (Python). Pure calculation engine + REST API + SQLite persistence.
-- **Frontend:** React Native / Expo (JavaScript). Runs on a real iPhone via Expo Go.
-
-The app models a real 36-month plan to clear a credit card and a Debt Management
-Plan (DMP), then build a house deposit. It is already functional and tested — you
-are continuing development, not starting from scratch.
-
-## Project layout
+## Architecture
 
 ```
-backend/app/
-  engine.py     Pure £2,092 "waterfall" payoff logic. NO framework imports.
-  database.py   SQLAlchemy models: plans, month_progress. SQLite.
-  schemas.py    Pydantic request/response contracts.
-  main.py       FastAPI endpoints (CRUD + projection + progress).
-frontend/
-  App.js        Tab navigation + shared state (Plan / Tracker / Settings).
-  src/api/client.js   fetch wrapper. NOTE: API_BASE must point at the backend LAN IP.
-  src/theme/theme.js  Design tokens (mirror the printed wall sheets).
-  src/components/ui.js
-  src/screens/  OverviewScreen, TrackerScreen, SettingsScreen.
+frontend/           React Native / Expo (JavaScript)
+  App.js            Root: onboarding gate → 4-tab app
+  app.json          Bundle ID: com.benoats.debtfreedom · name: Debt Freedom
+  eas.json          EAS Build profiles (development / preview / production)
+  assets/           icon.png · adaptive-icon.png · splash.png
+  src/
+    engine/
+      projection.js Pure JS projection engine (multi-debt, avalanche/snowball,
+                    overpayments, goals). No network calls. Runs on-device.
+    screens/
+      OnboardingScreen.js  5-step activation wizard (Welcome→Debts→Budget→
+                           Projection→Save). First launch only.
+      PlanScreen.js        Debt Freedom Countdown hero + roadmap + debts/goals
+      TrackerScreen.js     Month-by-month tick-offs + overpayments
+      AwardsScreen.js      5-level progression + milestone badges
+      SettingsScreen.js    Debts/goals editor + strategy switch + reset
+    components/
+      ui.js           Design-system primitives (Kicker, StatCard, GrowBar,
+                      Segmented, TabBar, MilestoneTimeline, …)
+      Celebration.js  Animated milestone modal
+    theme/
+      theme.js        Colors, type scale, spacing, radius, helpers (gbp,
+                      monthLabel, yearsMonths, daysUntil, laneFor)
+
+docs/
+  backend-readiness-audit.md   Full audit of v1.0 vs v1.1 cloud requirements
+  launch-runbook.md            Step-by-step: EAS Build → TestFlight → App Store
+  app-store-metadata.md        All App Store Connect copy, ready to paste
+  public-pages/                GitHub Pages site (Privacy · Support · Terms)
+
+scripts/
+  generate_assets.py   Generates icon + splash PNGs from brand tokens (Pillow)
 ```
 
-## The financial model (do not silently change these numbers)
+## Data flow (v1.0)
 
-Total monthly budget is held flat at **£2,092** in every phase (no lifestyle creep).
-Every month deploys the FULL budget — when a debt needs less than its slot, the
-leftover cascades to the next target so nothing sits idle.
+Everything is on-device. Zero network calls. Zero backend.
 
-| Phase | Months | CC | DMP | Save |
-|-------|--------|----|-----|------|
-| 1 | 1–12 | £1,300 | £492 | £300 |
-| 2 | 13–27 | £0 | £1,492 | £500–600 |
-| 3 | 28–36 | £0 | £0 | £2,092 |
-
-Verified milestones the engine MUST keep producing for the default plan:
-- Credit card cleared: **Month 13**
-- DMP cleared (debt free): **Month 27**
-- £60,000 total position (savings + equity) reached: **Month 36**
-- Final total position: **£61,656**
-
-Opening position: CC £15,700 · DMP £26,955.99 · equity £21,800 · equity grows
-£200/mo · property £330,000 (70% share) · mortgage £186,707 · Oplo £22,460.
-
-If you touch `engine.py`, re-run the verification below and confirm these numbers
-still hold before committing.
-
-## How to run
-
-Backend:
-```bash
-cd backend
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000   # docs at /docs
+```
+OnboardingScreen  →  plan object  →  App.js (useState + AsyncStorage)
+                                         ↓
+                                  projection.js (buildProjection)
+                                         ↓
+                             PlanScreen / TrackerScreen / AwardsScreen
 ```
 
-Frontend:
+**AsyncStorage keys:**
+- `dcs3.plan` — the user's full plan (debts, goals, budget, strategy, overpayments)
+- `dcs3.done` — Set of ticked month indices
+- `dcs3.tab` — last active tab
+- `dcs3.onboarded` — `'1'` once onboarding is complete
+
+## The projection engine
+
+`frontend/src/engine/projection.js` — pure JS, no framework imports. Takes a plan object and a `Set` of done months; returns full month-by-month rows, debt-free month, interest totals, milestone events.
+
+Default plan shape:
+- `debts[]` — id, name, type, balance, original, apr, minPayment
+- `goals[]` — id, name, target
+- `monthlyBudget` — number
+- `allowanceYou` / `allowancePartner` — personal spend kept aside
+- `saveWhileInDebt` — protected savings amount while debt remains
+- `strategy` — `'avalanche'` | `'snowball'`
+- `overpayments` — `{ [monthIndex]: amount }`
+
+## App identity
+
+| Field | Value |
+|---|---|
+| App name | Debt Freedom |
+| Bundle ID | `com.benoats.debtfreedom` |
+| Version | 1.0.0 |
+| Build number | 1 |
+| Orientation | Portrait only |
+| Tablet | No |
+
+## How to run locally
+
 ```bash
 cd frontend
 npm install
-npx expo start        # scan QR with Expo Go; set API_BASE to your computer's LAN IP
+npx expo start --lan   # scan QR in Expo Go on your iPhone (same Wi-Fi)
 ```
 
-## How to verify (run after any backend change)
+## How to build for TestFlight
 
 ```bash
-cd backend && pip install httpx
-PYTHONPATH=. python3 - <<'PY'
-import warnings; warnings.filterwarnings("ignore")
-from fastapi.testclient import TestClient
-from app.main import app
-with TestClient(app) as c:
-    pid = c.post('/plans', json={'name':'Test'}).json()['id']
-    s = c.get(f'/plans/{pid}/projection').json()['summary']
-    assert (s['cc_cleared_month'], s['dmp_cleared_month'], s['target_hit_month']) == (13, 27, 36), s
-    assert s['final_total_position'] == 61656, s
-    c.put(f'/plans/{pid}/progress/1', json={'done': True})
-    assert c.get(f'/plans/{pid}/projection').json()['summary']['months_done'] == 1
-    print("VERIFIED: engine + API + persistence OK")
-PY
+cd frontend
+npm install -g eas-cli
+eas login
+eas build --platform ios --profile preview
 ```
-There is no test suite yet — **adding pytest tests is a good first task** (see below).
+
+See `docs/launch-runbook.md` for the full step-by-step.
+
+## Public pages (GitHub Pages)
+
+Live at `https://thelaughinggod1986.github.io/Debt-Clear-Save/public-pages/`
+
+- Privacy: `.../privacy.html`
+- Support: `.../support.html`
+- Terms:   `.../terms.html`
+
+Source: `docs/public-pages/`. Served from the `main` branch `/docs` folder.
+
+## v1.1 backlog (post-App Store launch)
+
+1. **Supabase cloud sync** — anonymous session on first launch → link Apple/Google/Email identity in onboarding step 5. Full schema + RLS + service layer design in `docs/backend-readiness-audit.md`.
+2. **Sign in with Apple / Google / Email** — buttons exist in onboarding step 5 but are currently disabled (no backend yet).
+3. **SVG projection chart** — multi-line balance/savings/net-worth chart using `react-native-svg`.
+4. **Payment reminders** — push notifications via Expo Notifications.
+5. **Shared / partner mode** — joint plans with two avatars.
 
 ## Conventions
 
-- Backend: keep `engine.py` free of framework/DB imports so it stays unit-testable.
-  Money is rounded to whole pounds for display via the engine's `_round`.
-- API returns a clean `422` for invalid plans (e.g. Phase 1 allocations exceeding
-  the budget) — never let the engine's `ValueError` surface as a 500.
-- Frontend: no TypeScript currently; design tokens live in `theme.js`, don't
-  hard-code colours. The projection is always recomputed server-side — only
-  month tick-offs are mutable state.
-- CORS is wide open (`*`) for dev. Must be tightened before any deploy.
-
-## Suggested backlog (good next tasks, roughly in order)
-
-1. **Tests:** add `backend/tests/` with pytest — cover the engine directly
-   (phase transitions, the M13/M27 cascade, validation) and the API endpoints.
-2. **Auth + multi-user:** there is no auth; it's single-user/local. Add token auth
-   and scope plans to a user before any shared deployment.
-3. **Charts in the app:** port the page-4 progress chart (CC/DMP/savings/equity/
-   total lines) into the Overview screen using `react-native-svg` or Victory Native.
-4. **Actuals vs projection:** the `month_progress` table already has `actual_saved`
-   and `note` fields — surface them in the Tracker so users log real numbers and
-   see drift from plan.
-5. **Persistence/deploy:** swap SQLite → Postgres via `DATABASE_URL` in
-   `database.py`; add a Dockerfile; document a Render/Railway/Fly.io deploy.
-6. **App Store:** wire up `eas build` (needs an Apple Developer account) to produce
-   a real `.ipa`.
+- No TypeScript in v1.0 (planned for v1.1 alongside Supabase).
+- No hardcoded colours — use `colors.*` from `theme.js`.
+- No direct AsyncStorage access outside `App.js`.
+- Projection is always recomputed from source data — never persist derived values.
+- Financial disclaimer is shown in onboarding step 5 and Settings → About.
 
 ## Guardrails
 
-- This is a personal-finance tool, not regulated advice. Don't add features that
-  present outputs as financial advice.
-- Preserve the verified default-plan milestones (M13 / M27 / M36 / £61,656) unless
-  the user explicitly asks to change the model.
+- This is a personal-finance planning tool, not regulated advice. Don't add features that present outputs as financial advice.
+- The app must not contain any backend admin secrets.
+- The Supabase service role key must never enter the mobile bundle in v1.1 (use Edge Functions for privileged operations).
