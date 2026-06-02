@@ -28,6 +28,7 @@ import {
   PrimaryButton,
   GrowBar,
   SectionHead,
+  ComingSoon,
 } from '../components/ui';
 import { DEFAULT_PLAN, buildProjection } from '../engine/projection';
 
@@ -333,6 +334,51 @@ function StepDebts({ debts, setDebts, onNext, onBack }) {
       >
         <Kicker>Step 2 of 5</Kicker>
         <ScreenTitle>What debts do you have?</ScreenTitle>
+
+        {/* Planning mode selector — partner mode needs a backend so it's locked */}
+        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+          {/* "Just me" — active */}
+          <View
+            style={{
+              flex: 1,
+              marginRight: 6,
+              borderWidth: 1.5,
+              borderColor: colors.ink,
+              borderRadius: radius.md,
+              paddingVertical: 11,
+              paddingHorizontal: 6,
+              alignItems: 'center',
+              backgroundColor: colors.white,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.ink }}>
+              Just me
+            </Text>
+          </View>
+
+          {/* "Me + partner" — locked, coming soon */}
+          <View
+            style={{
+              flex: 1,
+              marginLeft: 6,
+              borderWidth: 1.5,
+              borderStyle: 'dashed',
+              borderColor: colors.line,
+              borderRadius: radius.md,
+              paddingVertical: 9,
+              paddingHorizontal: 6,
+              alignItems: 'center',
+              backgroundColor: colors.paper,
+              opacity: 0.85,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.muted, marginBottom: 4 }}>
+              Me + partner
+            </Text>
+            <ComingSoon />
+          </View>
+        </View>
+
         <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
           Add everything you owe. The more accurate, the better your projection.
         </Text>

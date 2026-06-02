@@ -395,6 +395,53 @@ export function MilestoneTimeline({ items }) {
   );
 }
 
+// ── ComingSoon pill ───────────────────────────────────────────────
+// A small consistent pill for any feature that needs a backend.
+// Gold dot + "Coming soon" text — used across onboarding, settings, etc.
+
+export function ComingSoon({ label = 'Coming soon', style }) {
+  return (
+    <View
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          backgroundColor: colors.lineSoft,
+          borderWidth: 1,
+          borderColor: colors.line,
+          paddingVertical: 3,
+          paddingHorizontal: 9,
+          borderRadius: radius.pill,
+        },
+        style,
+      ]}
+    >
+      <View
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: 2.5,
+          backgroundColor: colors.gold,
+          marginRight: 5,
+        }}
+      />
+      <Text
+        style={{
+          fontFamily: undefined,
+          fontSize: 9,
+          fontWeight: '800',
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: colors.muted,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 // ── Avatar ────────────────────────────────────────────────────────
 
 export function Avatar({ name, color, size = 26 }) {

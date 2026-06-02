@@ -18,6 +18,7 @@ import {
   Segmented,
   PrimaryButton,
   GhostButton,
+  ComingSoon,
 } from '../components/ui';
 
 // ── Inline number/text field used throughout the editor ──────────
@@ -292,6 +293,46 @@ export function SettingsScreen({ plan, projection, onSave, onReset }) {
         <PrimaryButton onPress={() => onSave(draft)} disabled={!dirty}>
           {dirty ? 'Save changes' : 'Up to date'}
         </PrimaryButton>
+      </View>
+
+      <SectionHead right={<ComingSoon />}>Partner mode</SectionHead>
+      <View
+        style={{
+          backgroundColor: colors.white,
+          borderWidth: 1.5,
+          borderColor: colors.line,
+          borderRadius: radius.md,
+          padding: 14,
+        }}
+      >
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 6 }}>
+          Plan together — coming soon
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 18, marginBottom: 12 }}>
+          Partner mode lets you and your partner share a single debt plan with live sync across both phones.
+        </Text>
+        {[
+          ['Shared dashboard', 'You both see the same plan and progress'],
+          ['Partner invites', 'Invite by email or a share link'],
+          ['Live sync', 'Changes update on both devices instantly'],
+        ].map(([title, sub]) => (
+          <View
+            key={title}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              paddingVertical: 7,
+              borderTopWidth: 1,
+              borderTopColor: colors.lineSoft,
+            }}
+          >
+            <Text style={{ color: colors.gold, fontWeight: '900', marginRight: 10, marginTop: 1 }}>●</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>{title}</Text>
+              <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>{sub}</Text>
+            </View>
+          </View>
+        ))}
       </View>
 
       <SectionHead>Privacy</SectionHead>
