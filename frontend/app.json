@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0d1b2a"
     },
-    "assetBundlePatterns": ["assets/**/*"],
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.benoats.debtfreedom",
@@ -27,6 +29,12 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1b2a"
       }
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "69a4caff-70cf-4f84-8fc8-6da827993f1f"
+      }
+    },
+    "owner": "beep1986"
   }
 }
