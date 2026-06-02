@@ -35,6 +35,12 @@
         "projectId": "69a4caff-70cf-4f84-8fc8-6da827993f1f"
       }
     },
-    "owner": "beep1986"
+    "owner": "beep1986",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/69a4caff-70cf-4f84-8fc8-6da827993f1f"
+    }
   }
 }
